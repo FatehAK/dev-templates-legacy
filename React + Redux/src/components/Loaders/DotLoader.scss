@@ -1,0 +1,42 @@
+@import "../../assets/scss/variables";
+
+/* dot-loader */
+.dot-loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999;
+}
+
+.dot-loader > div:not(:last-child) {
+  margin: 0 6px 0 0;
+}
+
+.dot-loader > div {
+  width: 9px;
+  height: 9px;
+  display: inline-block;
+  background: $primary-color;
+  border-radius: 100%;
+  animation: scaleUp 1.4s infinite ease-in-out both;
+}
+
+.dot-loader .bounce1 {
+  animation-delay: -0.32s;
+}
+
+.dot-loader .bounce2 {
+  animation-delay: -0.16s;
+}
+
+@keyframes scaleUp {
+  0%,
+  80%,
+  100% {
+    transform: scale(0) translateZ(0);
+  }
+
+  40% {
+    transform: scale(1) translateZ(0);
+  }
+}

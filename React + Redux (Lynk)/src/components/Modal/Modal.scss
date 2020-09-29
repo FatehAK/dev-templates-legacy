@@ -1,0 +1,41 @@
+@import "../../assets/scss/variables";
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999999;
+}
+
+/* product modal */
+.modal-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.404);
+}
+
+.modal-overlay-enter {
+  opacity: 0.01;
+  transform: scale(1.1);
+}
+
+.modal-overlay-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: all 0.3s;
+}
+
+.modal-overlay-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.modal-overlay-exit-active {
+  opacity: 0.01;
+  transform: scale(1.1);
+  transition: all 0.3s;
+}

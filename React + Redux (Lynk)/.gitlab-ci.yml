@@ -1,0 +1,80 @@
+image: node
+
+stages:
+  - build
+  - deploy-staging
+  - deploy-prod
+
+cache:
+  paths:
+    - node_modules/
+    - .yarn
+
+build:
+  stage: build
+  tags:
+    - docker
+  before_script:
+    - yarn config set cache-folder .yarn
+    - yarn install
+  script:
+    - yarn build
+  artifacts:
+    expire_in: 2 days
+    paths:
+      - '${CI_PROJECT_DIR}/build'
+
+deploy-staging:
+  stage: deploy-staging
+  tags:
+    - shell
+  variables:
+    IMAGE_REPO_NAME: "myapp-staging"
+    IMAGE_VERSION: "v_${CI_PIPELINE_ID}"
+    SERVICE_NAME: "myapp-staging"
+    TASK_FAMILY: "myapp-staging"
+    CONFIG_NAME: "myapp-staging"
+    CLUSTER_NAME: "staging"
+    CONFIG_FOLDER: "lynk-test-config"
+    AWS_BUCKET: "lynk-test-config"
+  environment:
+    name: staging
+    url: https://myapp-staging.lynk.co.in
+  only:
+    - staging
+  before_script:
+    - pip install awscli
+  script:
+    - eval $(aws ecr get-login --no-include-email --region ap-south-1)
+    - docker build -f docker/staging/Dockerfile -t ${IMAGE_REPO_NAME} .
+    - docker tag ${IMAGE_REPO_NAME} ${AWS_ACCOUNT_ID}.dkr.ecr.ap-south-1.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_VERSION}
+    - docker push ${AWS_ACCOUNT_ID}.dkr.ecr.ap-south-1.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_VERSION}
+    - aws s3 cp --region ${AWS_REGION} s3://${AWS_BUCKET}/${CONFIG_NAME}.json  /tmp/ci/${CONFIG_FOLDER}/
+    - export WORKSPACE_PATH="/tmp/ci/${CONFIG_FOLDER}/${CONFIG_NAME}.json"
+    - export CONFIG_PATH="/tmp/ci/${CONFIG_FOLDER}/${CONFIG_NAME}-${IMAGE_VERSION}.json"
+    - sed -e "s;%IMAGE_VERSION%;${IMAGE_VERSION};g" ${WORKSPACE_PATH}  > ${CONFIG_PATH}
+    - aws ecs register-task-definition --region ${AWS_REGION} --family  ${TASK_FAMILY} --cli-input-json file://${CONFIG_PATH}
+    - export TASK_REVISION=`aws ecs describe-task-definition  --region ${AWS_REGION} --task-definition ${TASK_FAMILY} | egrep "revision" | tr "/" " " | awk '{print $2}' | sed 's/"$//'  | sed 's/,$//'`
+    - export DESIRED_COUNT=`aws ecs describe-services --region ${AWS_REGION} --cluster ${CLUSTER_NAME} --services ${SERVICE_NAME}  | egrep "desiredCount" | tr "/" " " | awk '{print $2}' | sed 's/,$//' | head -1`
+    - echo ${AWS_REGION}
+    - echo ${TASK_FAMILY}
+    - echo ${TASK_REVISION}
+    - echo ${CLUSTER_NAME}
+    - echo ${DESIRED_COUNT}
+    - aws ecs update-service --region ${AWS_REGION} --cluster ${CLUSTER_NAME} --service ${SERVICE_NAME}  --task-definition ${TASK_FAMILY}:${TASK_REVISION} --desired-count ${DESIRED_COUNT} --deployment-configuration maximumPercent=200,minimumHealthyPercent=50
+
+deploy-prod:
+  stage: deploy-prod
+  tags:
+    - new-shell
+  environment:
+    name: prod
+    url: https://myapp.lynk.co.in
+  only:
+    - prod
+  before_script:
+    - echo "Deploying"
+  script:
+    - wget https://lynk-binaries.s3.ap-south-1.amazonaws.com/linux-deployer/linux-deployer
+    - chmod +x linux-deployer
+    - ./linux-deployer -env=prod-new -service=myapp

@@ -1,0 +1,27 @@
+{
+  "name": "vanilla-js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "parcel ./public/index.html -d dev --port 3000 --open",
+    "prebuild": "rm -rf build/*",
+    "build": "parcel build ./public/index.html -d build --public-url ./"
+  },
+  "author": "fatehak",
+  "dependencies": {
+    "@babel/runtime": "^7.11.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.11.6",
+    "@babel/plugin-transform-runtime": "^7.11.5",
+    "@babel/preset-env": "^7.11.5",
+    "autoprefixer": "9.8.6",
+    "eslint": "^7.10.0",
+    "htmlhint": "^0.14.1",
+    "parcel-bundler": "^1.12.4",
+    "postcss-modules": "^3.2.2",
+    "stylelint": "^13.7.2",
+    "stylelint-config-standard": "^20.0.0"
+  }
+}
